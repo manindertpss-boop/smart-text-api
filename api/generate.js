@@ -4,29 +4,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt } = req.body; 
+    const { prompt } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'No prompt provided' });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    const response = await fetch('https://api.openai.com/v1/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo-instruct',
-        prompt: `Write a nice greeting based on: ${prompt}`,
-        max_tokens: 80
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: `Write a nice greeting based on: ${prompt}` }
+              ]
+            }
+          ]
+        })
+      }
+    );
 
     const data = await response.json();
-    const text = data.choices?.[0]?.text?.trim() || 'No AI response';
+
+    // Extract text from Gemini response
+    const text =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No AI response';
 
     res.status(200).json({ text, raw: data });
   } catch (err) {
